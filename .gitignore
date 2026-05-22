@@ -20,6 +20,10 @@ __pycache__/
 static/*.mp4
 static/*.webm
 static/*.png
+static/screenshots/*/
+static/videos/*/
+!static/screenshots/.gitkeep
+!static/videos/.gitkeep
 
 # OS Files
 .DS_Store
