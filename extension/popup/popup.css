@@ -1,0 +1,293 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 320px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  color: #1e293b;
+}
+
+.version {
+  font-size: 11px;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+/* Views */
+.view {
+  padding: 14px 16px;
+}
+
+.view.hidden {
+  display: none;
+}
+
+/* Status card */
+.status-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.status-card.recording {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.status-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.rec-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.9); }
+}
+
+.status-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.status-sub {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0 0 6px;
+}
+
+.select-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #1e293b;
+  font-size: 12px;
+  margin-bottom: 10px;
+  outline: none;
+}
+
+.select-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+/* Buttons */
+.btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.btn:hover {
+  opacity: 0.88;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: #6366f1;
+  color: #fff;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: #fff;
+}
+
+.btn-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.8);
+}
+
+/* Guides list */
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0 16px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.guides-list {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0 8px 8px;
+}
+
+.empty-state {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12px;
+  padding: 20px;
+}
+
+.guide-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border: 1px solid transparent;
+}
+
+.guide-item:hover {
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+.guide-thumb {
+  width: 48px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  background: #e2e8f0;
+}
+
+.guide-thumb-placeholder {
+  width: 48px;
+  height: 32px;
+  border-radius: 5px;
+  background: linear-gradient(135deg, #818cf8, #6366f1);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guide-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.guide-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guide-meta {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+.guide-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.guide-item:hover .guide-actions {
+  opacity: 1;
+}
+
+.icon-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  color: #64748b;
+  transition: background 0.12s;
+  flex-shrink: 0;
+}
+
+.icon-btn:hover {
+  background: #e2e8f0;
+}
+
+.icon-btn.danger:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}

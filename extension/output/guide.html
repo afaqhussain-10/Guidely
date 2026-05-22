@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guidely</title>
+  <link rel="stylesheet" href="guide.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="logo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill="#6366f1"/>
+            <path d="M8 12l3 3 5-5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Guidely</span>
+        </div>
+        <div class="divider"></div>
+        <input id="guide-title" class="title-input" type="text" value="Untitled Guide" spellcheck="false">
+      </div>
+      <div class="topbar-right">
+        <span id="step-counter" class="step-counter">1 / 1</span>
+        <button id="btn-mode" class="btn-action">Presentation</button>
+        <button id="btn-export" class="btn-action">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Export
+        </button>
+      </div>
+    </header>
+
+    <div class="main">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">Steps</div>
+        <div id="step-list" class="step-list"></div>
+      </aside>
+
+      <main class="content">
+        <div class="screenshot-area" id="screenshot-area">
+          <div id="demo-spotlight" class="demo-spotlight hidden"></div>
+          <div class="screenshot-wrapper" id="screenshot-wrapper">
+            <img id="screenshot-img" class="screenshot-img" src="" alt="Step screenshot">
+            <img id="screenshot-img-next" class="screenshot-img-next" src="" alt="">
+            <video id="screenshot-video" class="screenshot-img" style="display:none;" muted autoplay loop playsinline></video>
+            <div id="click-indicator" class="click-indicator" style="display:none;"></div>
+          </div>
+          <div id="demo-hotspot" class="demo-hotspot hidden"></div>
+          <div id="demo-focus-progress" class="demo-focus-progress hidden">
+            <span id="demo-focus-progress-text">1 / 1</span>
+          </div>
+          <div id="demo-cursor" class="demo-cursor hidden"></div>
+          <div id="demo-typing-overlay" class="demo-typing-overlay hidden">
+            <span id="demo-typing-text" class="demo-typing-text"></span>
+          </div>
+          <div id="demo-card" class="demo-card hidden">
+            <div class="demo-card-header">
+              <div id="demo-step-label" class="demo-step-label">Step 1</div>
+              <div id="demo-progress-text" class="demo-progress-text">1 / 1</div>
+            </div>
+            <div class="demo-progress-track">
+              <div id="demo-progress-fill" class="demo-progress-fill"></div>
+            </div>
+            <div id="demo-description" class="demo-description">Step description</div>
+            <div class="demo-card-actions">
+              <button id="demo-prev" class="demo-nav-btn">
+                <span id="demo-prev-label">Back</span>
+              </button>
+              <button id="demo-next" class="demo-nav-btn primary">
+                <span id="demo-next-label">Next</span>
+              </button>
+            </div>
+          </div>
+          <div id="no-screenshot" class="no-screenshot hidden">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#cbd5e1" stroke-width="2"/><path d="M3 9h18" stroke="#cbd5e1" stroke-width="2"/></svg>
+            <p>No screenshot available</p>
+          </div>
+        </div>
+
+        <div id="frame-filmstrip" class="frame-filmstrip hidden" aria-label="Typing frames"></div>
+
+        <div class="step-info">
+          <div class="step-badge" id="step-badge">1</div>
+          <div id="step-description" class="step-description" contenteditable="true" spellcheck="false">Step description</div>
+          <div class="nav-buttons">
+            <button id="btn-prev" class="nav-btn prev" title="Previous (←)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+              <span id="btn-prev-label">Prev</span>
+            </button>
+            <button id="btn-next" class="nav-btn next" title="Next (→)">
+              <span id="btn-next-label">Next</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="../storage/prefs-repo.js"></script>
+  <script src="../storage/media-repo.js"></script>
+  <script src="guide.js"></script>
+</body>
+</html>

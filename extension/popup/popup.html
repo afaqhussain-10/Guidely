@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guidely</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" fill="#6366f1"/>
+          <path d="M8 12l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Guidely</span>
+      </div>
+      <span class="version">v1.0</span>
+    </header>
+
+    <!-- Recording state -->
+    <div id="view-idle" class="view">
+      <div class="status-card idle">
+        <div class="status-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="#94a3b8" stroke-width="2"/>
+            <path d="M10 8l6 4-6 4V8z" fill="#94a3b8"/>
+          </svg>
+        </div>
+        <div>
+          <div class="status-title">Ready to record</div>
+          <div class="status-sub">Click a tab to start</div>
+        </div>
+      </div>
+      <label class="field-label" for="caption-language">Caption Language</label>
+      <select id="caption-language" class="select-input">
+        <option value="en">English</option>
+        <option value="ar">Arabic</option>
+      </select>
+      <button id="btn-start" class="btn btn-primary">
+        <span class="btn-dot"></span>
+        Start Recording
+      </button>
+    </div>
+
+    <div id="view-recording" class="view hidden">
+      <div class="status-card recording">
+        <div class="rec-dot"></div>
+        <div>
+          <div class="status-title">Recording…</div>
+          <div class="status-sub">
+            <span id="rec-time">0:00</span>
+            &nbsp;·&nbsp;
+            <span id="rec-steps">0 steps</span>
+          </div>
+        </div>
+      </div>
+      <button id="btn-stop" class="btn btn-danger">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+          <rect x="2" y="2" width="10" height="10" rx="2"/>
+        </svg>
+        Stop Recording
+      </button>
+    </div>
+
+    <!-- Guides list -->
+    <div class="section-label">Recent Guides</div>
+    <div id="guides-list" class="guides-list">
+      <div class="empty-state">No guides yet</div>
+    </div>
+  </div>
+
+  <script src="../storage/prefs-repo.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
