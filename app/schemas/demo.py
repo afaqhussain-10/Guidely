@@ -41,6 +41,14 @@ class DemoUpdate(BaseModel):
     All fields are optional to allow partial updates.
     """
     
+    title: Optional[str] = Field(
+        default=None,
+        description="Title or name of the demonstration",
+        examples=["How to create a user account"],
+        min_length=1,
+        max_length=255
+    )
+    
     status: Optional[str] = Field(
         default=None,
         description="Processing status of the demo",

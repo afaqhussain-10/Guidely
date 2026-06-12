@@ -73,8 +73,8 @@ class LocalStorage:
                 f.write(file)
             
             # Generate public URL
-            # Format: http://localhost:8000/static/videos/{demo_id}/video.mp4
-            video_url = f"http://localhost:8000/static/videos/{demo_id}/video.mp4"
+            # Format: /static/videos/{demo_id}/video.mp4
+            video_url = f"/static/videos/{demo_id}/video.mp4"
             
             return video_url
         
@@ -107,8 +107,8 @@ class LocalStorage:
                 f.write(file)
             
             # Generate public URL
-            # Format: http://localhost:8000/static/screenshots/{demo_id}/step_{step_number}.png
-            screenshot_url = f"http://localhost:8000/static/screenshots/{demo_id}/step_{step_number}.png"
+            # Format: /static/screenshots/{demo_id}/step_{step_number}.png
+            screenshot_url = f"/static/screenshots/{demo_id}/step_{step_number}.png"
             
             return screenshot_url
         

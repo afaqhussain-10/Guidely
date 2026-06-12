@@ -74,6 +74,18 @@ class Step(Base):
         comment="Y-coordinate of the action on the screen"
     )
     
+    viewport_width = Column(
+        Float,
+        nullable=True,
+        comment="Viewport width at the time of capturing this step"
+    )
+    
+    viewport_height = Column(
+        Float,
+        nullable=True,
+        comment="Viewport height at the time of capturing this step"
+    )
+    
     # Media
     image_url = Column(
         String,

@@ -49,6 +49,18 @@ class StepCreate(BaseModel):
         ge=0
     )
     
+    viewport_width: Optional[float] = Field(
+        default=None,
+        description="Viewport width at the time of capturing this step",
+        ge=0
+    )
+    
+    viewport_height: Optional[float] = Field(
+        default=None,
+        description="Viewport height at the time of capturing this step",
+        ge=0
+    )
+    
     image_url: Optional[str] = Field(
         default=None,
         description="URL to the screenshot image for this step"
@@ -94,6 +106,16 @@ class StepResponse(BaseModel):
     coord_y: Optional[float] = Field(
         default=None,
         description="Y-coordinate of the action on the screen"
+    )
+    
+    viewport_width: Optional[float] = Field(
+        default=None,
+        description="Viewport width at the time of capturing this step"
+    )
+    
+    viewport_height: Optional[float] = Field(
+        default=None,
+        description="Viewport height at the time of capturing this step"
     )
     
     image_url: Optional[str] = Field(

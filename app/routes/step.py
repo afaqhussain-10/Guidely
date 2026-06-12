@@ -30,6 +30,8 @@ async def create_step(
     element: Optional[str] = Form(None),
     coord_x: Optional[float] = Form(None),
     coord_y: Optional[float] = Form(None),
+    viewport_width: Optional[float] = Form(None),
+    viewport_height: Optional[float] = Form(None),
     screenshot: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
@@ -47,6 +49,8 @@ async def create_step(
         element: Target element or component
         coord_x: X-coordinate of the action
         coord_y: Y-coordinate of the action
+        viewport_width: Viewport width at time of capture
+        viewport_height: Viewport height at time of capture
         screenshot: Optional screenshot image file
         db: Database session
     
@@ -104,6 +108,8 @@ async def create_step(
             element=element,
             coord_x=coord_x,
             coord_y=coord_y,
+            viewport_width=viewport_width,
+            viewport_height=viewport_height,
             image_url=image_url,
             ai_description_en=description_en,
             ai_description_ar=description_ar
@@ -174,4 +180,150 @@ def get_demo_steps(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve steps: {str(e)}"
+        )
+
+
+@router.patch("/{demo_id}/steps/{step_id}", response_model=StepResponse)
+def update_step(
+    demo_id: UUID,
+    step_id: UUID,
+    ai_description_en: Optional[str] = Form(None),
+    ai_description_ar: Optional[str] = Form(None),
+    coord_x: Optional[float] = Form(None),
+    coord_y: Optional[float] = Form(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Update a step's description and coordinates.
+    
+    This endpoint allows updating a step's AI-generated descriptions
+    and tooltip coordinates.
+    
+    Args:
+        demo_id: UUID of the parent demo
+        step_id: UUID of the step to update
+        ai_description_en: Updated English description
+        ai_description_ar: Updated Arabic description
+        coord_x: Updated X-coordinate
+        coord_y: Updated Y-coordinate
+        db: Database session
+    
+    Returns:
+        StepResponse: Updated step details
+    
+    Raises:
+        HTTPException: If demo or step not found or update fails
+    """
+    try:
+        # Verify that the demo exists
+        demo = db.query(Demo).filter(Demo.id == demo_id).first()
+        
+        if not demo:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Demo with id {demo_id} not found"
+            )
+        
+        # Find the step
+        step = db.query(Step).filter(
+            Step.id == step_id,
+            Step.demo_id == demo_id
+        ).first()
+        
+        if not step:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Step with id {step_id} not found"
+            )
+        
+        # Update fields if provided
+        if ai_description_en is not None:
+            step.ai_description_en = ai_description_en
+        
+        if ai_description_ar is not None:
+            step.ai_description_ar = ai_description_ar
+        
+        if coord_x is not None:
+            step.coord_x = coord_x
+        
+        if coord_y is not None:
+            step.coord_y = coord_y
+        
+        # Commit changes
+        db.commit()
+        db.refresh(step)
+        
+        return step
+    
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update step: {str(e)}"
+        )
+
+
+@router.delete("/{demo_id}/steps/{step_id}")
+def delete_step(
+    demo_id: UUID,
+    step_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a step.
+    
+    This endpoint deletes a specific step from a demo.
+    
+    Args:
+        demo_id: UUID of the parent demo
+        step_id: UUID of the step to delete
+        db: Database session
+    
+    Returns:
+        dict: Success message
+    
+    Raises:
+        HTTPException: If demo or step not found or deletion fails
+    """
+    try:
+        # Verify that the demo exists
+        demo = db.query(Demo).filter(Demo.id == demo_id).first()
+        
+        if not demo:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Demo with id {demo_id} not found"
+            )
+        
+        # Find the step
+        step = db.query(Step).filter(
+            Step.id == step_id,
+            Step.demo_id == demo_id
+        ).first()
+        
+        if not step:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Step with id {step_id} not found"
+            )
+        
+        # Delete the step
+        db.delete(step)
+        db.commit()
+        
+        return {"message": "Step deleted successfully"}
+    
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete step: {str(e)}"
         )
