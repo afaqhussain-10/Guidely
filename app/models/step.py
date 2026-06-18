@@ -92,6 +92,12 @@ class Step(Base):
         nullable=True,
         comment="URL to the screenshot image for this step (S3 or local storage)"
     )
+
+    video_url = Column(
+        String,
+        nullable=True,
+        comment="URL to the lead-up video clip for this step"
+    )
     
     # AI-Generated Descriptions
     ai_description_en = Column(
@@ -104,6 +110,13 @@ class Step(Base):
         Text,
         nullable=True,
         comment="AI-generated description of the step in Arabic"
+    )
+
+    # Concise hotspot microcopy (e.g. 'Click on "Type1".') shown in the tooltip bubble
+    hotspot_text = Column(
+        Text,
+        nullable=True,
+        comment="Short hotspot tooltip text shown in the player (Supademo-style)"
     )
     
     # Timestamps

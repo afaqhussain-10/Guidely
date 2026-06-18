@@ -11,6 +11,15 @@ from uuid import UUID
 from typing import Optional
 
 from app.core.config import settings
+from app.services.s3_service import (
+    s3_service,
+    step_screenshot_key,
+    step_video_key,
+)
+
+
+def _s3_enabled() -> bool:
+    return s3_service.is_configured
 
 
 class LocalStorage:
@@ -80,6 +89,31 @@ class LocalStorage:
         
         except Exception as e:
             raise Exception(f"Failed to save video to local storage: {str(e)}")
+
+    def save_step_video(self, file: bytes, demo_id: UUID, step_number: int) -> str:
+        """
+        Save a per-step lead-up video clip to local storage.
+
+        Args:
+            file: Video file content as bytes
+            demo_id: UUID of the demo this clip belongs to
+            step_number: Step number for organizing clips
+
+        Returns:
+            str: Public URL to access the step video file
+        """
+        try:
+            demo_dir = self.videos_dir / str(demo_id)
+            demo_dir.mkdir(parents=True, exist_ok=True)
+
+            video_path = demo_dir / f"step_{step_number}.mp4"
+            with open(video_path, 'wb') as f:
+                f.write(file)
+
+            return f"/static/videos/{demo_id}/step_{step_number}.mp4"
+
+        except Exception as e:
+            raise Exception(f"Failed to save step video to local storage: {str(e)}")
     
     def save_screenshot(self, file: bytes, demo_id: UUID, step_number: int) -> str:
         """
@@ -178,7 +212,118 @@ class LocalStorage:
         except Exception as e:
             print(f"Warning: Failed to delete screenshot from local storage: {str(e)}")
             return False
+
+    def delete_step_video(self, demo_id: UUID, step_number: int) -> bool:
+        """Delete a per-step video clip from local storage."""
+        try:
+            demo_dir = self.videos_dir / str(demo_id)
+            video_path = demo_dir / f"step_{step_number}.mp4"
+            if video_path.exists():
+                video_path.unlink()
+            return True
+        except Exception as e:
+            print(f"Warning: Failed to delete step video from local storage: {str(e)}")
+            return False
     
+    def get_screenshot_upload_spec(self, demo_id: UUID, step_id: UUID) -> dict:
+        """
+        Return upload instructions for a step screenshot.
+        Uses S3 presigned PUT when configured; otherwise multipart PATCH on API.
+        """
+        if _s3_enabled():
+            try:
+                key = step_screenshot_key(demo_id, step_id)
+                url = s3_service.generate_presigned_put_url(key, "image/jpeg")
+                if url:
+                    return {
+                        "method": "PUT",
+                        "url": url,
+                        "multipart": False,
+                        "headers": {"Content-Type": "image/jpeg"},
+                        "public_url": s3_service.public_url_for_key(key),
+                    }
+            except Exception as e:
+                print(f"Warning: S3 presign failed, falling back to API upload: {e}")
+
+        return {
+            "method": "PATCH",
+            "url": f"/api/demos/{demo_id}/steps/{step_id}/screenshot",
+            "multipart": True,
+            "field": "screenshot",
+        }
+
+    def get_video_upload_spec(self, demo_id: UUID, step_id: UUID) -> dict:
+        """Return upload instructions for a step lead-up video clip."""
+        if _s3_enabled():
+            try:
+                key = step_video_key(demo_id, step_id)
+                url = s3_service.generate_presigned_put_url(key, "video/webm")
+                if url:
+                    return {
+                        "method": "PUT",
+                        "url": url,
+                        "multipart": False,
+                        "headers": {"Content-Type": "video/webm"},
+                        "public_url": s3_service.public_url_for_key(key),
+                    }
+            except Exception as e:
+                print(f"Warning: S3 presign failed, falling back to API upload: {e}")
+
+        return {
+            "method": "PATCH",
+            "url": f"/api/demos/{demo_id}/steps/{step_id}/video",
+            "multipart": True,
+            "field": "video",
+        }
+
+    def screenshot_exists(self, demo_id: UUID, step_number: int) -> bool:
+        path = self.screenshots_dir / str(demo_id) / f"step_{step_number}.png"
+        return path.exists()
+
+    def step_video_exists(self, demo_id: UUID, step_number: int) -> bool:
+        path = self.videos_dir / str(demo_id) / f"step_{step_number}.mp4"
+        return path.exists()
+
+    def step_screenshot_available(
+        self,
+        demo_id: UUID,
+        step_id: UUID,
+        step_number: int,
+        image_url: Optional[str] = None,
+    ) -> bool:
+        if image_url:
+            return True
+        if _s3_enabled() and s3_service.head_object_exists(step_screenshot_key(demo_id, step_id)):
+            return True
+        return self.screenshot_exists(demo_id, step_number)
+
+    def step_video_available(
+        self,
+        demo_id: UUID,
+        step_id: UUID,
+        step_number: int,
+        video_url: Optional[str] = None,
+    ) -> bool:
+        if video_url:
+            return True
+        if _s3_enabled() and s3_service.head_object_exists(step_video_key(demo_id, step_id)):
+            return True
+        return self.step_video_exists(demo_id, step_number)
+
+    def resolve_step_screenshot_url(self, demo_id: UUID, step_id: UUID, step_number: int) -> Optional[str]:
+        if _s3_enabled() and s3_service.head_object_exists(step_screenshot_key(demo_id, step_id)):
+            return s3_service.public_url_for_key(step_screenshot_key(demo_id, step_id))
+        if self.screenshot_exists(demo_id, step_number):
+            return f"/static/screenshots/{demo_id}/step_{step_number}.png"
+        return None
+
+    def resolve_step_video_url(self, demo_id: UUID, step_id: UUID, step_number: int) -> Optional[str]:
+        if _s3_enabled() and s3_service.head_object_exists(step_video_key(demo_id, step_id)):
+            return s3_service.public_url_for_key(step_video_key(demo_id, step_id))
+        if self.step_video_exists(demo_id, step_number):
+            return f"/static/videos/{demo_id}/step_{step_number}.mp4"
+        return None
+
     def delete_demo_files(self, demo_id: UUID) -> bool:
         """
         Delete all files associated with a demo (video and screenshots).

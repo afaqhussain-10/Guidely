@@ -65,7 +65,46 @@ class Demo(Base):
         nullable=False,
         comment="Language code for the demonstration (e.g., 'en', 'es', 'fr')"
     )
-    
+
+    # ── Branding / player presentation (Supademo-style) ──
+    accent_color = Column(
+        String,
+        default="#7F77DD",
+        nullable=True,
+        comment="Primary accent color used for hotspots, tooltips and progress"
+    )
+
+    theme = Column(
+        String,
+        default="light",
+        nullable=True,
+        comment="Player theme: 'light' or 'dark'"
+    )
+
+    author_name = Column(
+        String,
+        nullable=True,
+        comment="Display name of the demo author, shown beneath the player"
+    )
+
+    cta_text = Column(
+        String,
+        nullable=True,
+        comment="Call-to-action button label shown in the player"
+    )
+
+    cta_url = Column(
+        String,
+        nullable=True,
+        comment="Call-to-action button destination URL"
+    )
+
+    cta_color = Column(
+        String,
+        nullable=True,
+        comment="Call-to-action button background color"
+    )
+
     # Timestamps
     created_at = Column(
         DateTime,

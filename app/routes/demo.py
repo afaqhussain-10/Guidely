@@ -16,6 +16,7 @@ from app.core.database import get_db
 from app.models.demo import Demo
 from app.models.step import Step
 from app.schemas.demo import DemoCreate, DemoUpdate, DemoResponse
+from app.schemas.step import DemoSyncStatusResponse, StepSyncStatusItem
 from app.services.video_processor import video_processor
 from app.services.local_storage import local_storage
 
@@ -84,11 +85,17 @@ def create_demo(
         HTTPException: If demo creation fails
     """
     try:
-        # Create new demo instance
+        # Create new demo instance (branding defaults to Supademo-style values)
         new_demo = Demo(
             title=demo.title,
             language=demo.language,
-            status="processing"
+            status="processing",
+            accent_color=demo.accent_color or "#7F77DD",
+            theme=demo.theme or "light",
+            author_name=demo.author_name,
+            cta_text=demo.cta_text,
+            cta_url=demo.cta_url,
+            cta_color=demo.cta_color,
         )
         
         # Add to database
@@ -152,6 +159,24 @@ def update_demo(
         
         if demo_update.duration is not None:
             demo.duration = demo_update.duration
+
+        if demo_update.accent_color is not None:
+            demo.accent_color = demo_update.accent_color
+
+        if demo_update.theme is not None:
+            demo.theme = demo_update.theme
+
+        if demo_update.author_name is not None:
+            demo.author_name = demo_update.author_name
+
+        if demo_update.cta_text is not None:
+            demo.cta_text = demo_update.cta_text
+
+        if demo_update.cta_url is not None:
+            demo.cta_url = demo_update.cta_url
+
+        if demo_update.cta_color is not None:
+            demo.cta_color = demo_update.cta_color
         
         # Commit changes
         db.commit()
@@ -249,6 +274,66 @@ async def update_demo_video(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update demo with video: {str(e)}"
+        )
+
+
+@router.get("/{demo_id}/sync-status", response_model=DemoSyncStatusResponse)
+def get_demo_sync_status(
+    demo_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Return per-step media presence for client reconciliation."""
+    try:
+        demo = db.query(Demo).filter(Demo.id == demo_id).first()
+        if not demo:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Demo with id {demo_id} not found"
+            )
+
+        steps = db.query(Step).filter(Step.demo_id == demo_id).order_by(Step.step_number).all()
+        items = []
+        all_present = True
+        missing_screenshots = 0
+        missing_videos = 0
+
+        for step in steps:
+            has_screenshot = local_storage.step_screenshot_available(
+                demo_id, step.id, step.step_number, step.image_url
+            )
+            has_video = local_storage.step_video_available(
+                demo_id, step.id, step.step_number, step.video_url
+            )
+            if not has_screenshot:
+                missing_screenshots += 1
+                all_present = False
+            items.append(StepSyncStatusItem(
+                step_id=step.id,
+                step_number=step.step_number,
+                has_screenshot=has_screenshot,
+                has_video=has_video,
+            ))
+
+        summary = {
+            "state": "synced" if all_present else "syncing",
+            "total_steps": len(steps),
+            "missing_screenshots": missing_screenshots,
+            "missing_videos": missing_videos,
+        }
+
+        return DemoSyncStatusResponse(
+            demo_id=demo_id,
+            all_media_present=all_present,
+            steps=items,
+            summary=summary,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get sync status: {str(e)}"
         )
 
 

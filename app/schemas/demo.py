@@ -32,6 +32,40 @@ class DemoCreate(BaseModel):
         examples=["en", "ar", "es", "fr"]
     )
 
+    accent_color: Optional[str] = Field(
+        default=None,
+        description="Primary accent color for hotspots/tooltips",
+        examples=["#7F77DD"]
+    )
+
+    theme: Optional[str] = Field(
+        default=None,
+        description="Player theme",
+        examples=["light", "dark"]
+    )
+
+    author_name: Optional[str] = Field(
+        default=None,
+        description="Display name of the demo author"
+    )
+
+    cta_text: Optional[str] = Field(
+        default=None,
+        description="Call-to-action button label",
+        examples=["Visit Datics AI Global"]
+    )
+
+    cta_url: Optional[str] = Field(
+        default=None,
+        description="Call-to-action button destination URL",
+        examples=["https://datics.ai"]
+    )
+
+    cta_color: Optional[str] = Field(
+        default=None,
+        description="Call-to-action button background color"
+    )
+
 
 class DemoUpdate(BaseModel):
     """
@@ -52,7 +86,7 @@ class DemoUpdate(BaseModel):
     status: Optional[str] = Field(
         default=None,
         description="Processing status of the demo",
-        examples=["processing", "completed", "failed"]
+        examples=["processing", "completed", "completed_partial", "failed"]
     )
     
     video_url: Optional[str] = Field(
@@ -65,6 +99,13 @@ class DemoUpdate(BaseModel):
         description="Video duration in seconds",
         ge=0
     )
+
+    accent_color: Optional[str] = Field(default=None, description="Primary accent color")
+    theme: Optional[str] = Field(default=None, description="Player theme (light/dark)")
+    author_name: Optional[str] = Field(default=None, description="Demo author display name")
+    cta_text: Optional[str] = Field(default=None, description="Call-to-action button label")
+    cta_url: Optional[str] = Field(default=None, description="Call-to-action button URL")
+    cta_color: Optional[str] = Field(default=None, description="Call-to-action button color")
 
 
 class DemoResponse(BaseModel):
@@ -101,6 +142,13 @@ class DemoResponse(BaseModel):
     language: str = Field(
         description="Language code for the demonstration"
     )
+
+    accent_color: Optional[str] = Field(default=None, description="Primary accent color")
+    theme: Optional[str] = Field(default=None, description="Player theme (light/dark)")
+    author_name: Optional[str] = Field(default=None, description="Demo author display name")
+    cta_text: Optional[str] = Field(default=None, description="Call-to-action button label")
+    cta_url: Optional[str] = Field(default=None, description="Call-to-action button URL")
+    cta_color: Optional[str] = Field(default=None, description="Call-to-action button color")
     
     created_at: datetime = Field(
         description="Timestamp when the demo was created"

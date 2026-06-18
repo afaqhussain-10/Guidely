@@ -66,6 +66,45 @@ class StepCreate(BaseModel):
         description="URL to the screenshot image for this step"
     )
 
+    video_url: Optional[str] = Field(
+        default=None,
+        description="URL to the lead-up video clip for this step"
+    )
+
+    hotspot_text: Optional[str] = Field(
+        default=None,
+        description="Short hotspot tooltip text shown in the player",
+        examples=['Click on "Submit".']
+    )
+
+
+class UploadSpec(BaseModel):
+    """Client upload instructions for split media sync."""
+
+    method: str = Field(description="HTTP method (PATCH, PUT, POST)")
+    url: str = Field(description="Absolute or API-relative upload URL")
+    multipart: bool = Field(default=False, description="Use multipart form upload")
+    field: Optional[str] = Field(default=None, description="Form field name for multipart")
+    headers: Optional[dict] = Field(default=None, description="Extra headers for direct upload")
+    public_url: Optional[str] = Field(
+        default=None,
+        description="Expected public URL after direct S3 upload completes"
+    )
+
+
+class StepSyncStatusItem(BaseModel):
+    step_id: UUID
+    step_number: int
+    has_screenshot: bool
+    has_video: bool
+
+
+class DemoSyncStatusResponse(BaseModel):
+    demo_id: UUID
+    all_media_present: bool
+    steps: list[StepSyncStatusItem]
+    summary: dict
+
 
 class StepResponse(BaseModel):
     """
@@ -122,6 +161,11 @@ class StepResponse(BaseModel):
         default=None,
         description="URL to the screenshot image for this step"
     )
+
+    video_url: Optional[str] = Field(
+        default=None,
+        description="URL to the lead-up video clip for this step"
+    )
     
     ai_description_en: Optional[str] = Field(
         default=None,
@@ -132,6 +176,11 @@ class StepResponse(BaseModel):
         default=None,
         description="AI-generated description of the step in Arabic"
     )
+
+    hotspot_text: Optional[str] = Field(
+        default=None,
+        description="Short hotspot tooltip text shown in the player"
+    )
     
     created_at: datetime = Field(
         description="Timestamp when the step was created"
@@ -140,3 +189,10 @@ class StepResponse(BaseModel):
     class Config:
         """Pydantic configuration"""
         from_attributes = True  # Enable ORM mode for SQLAlchemy models (Pydantic v2)
+
+
+class StepMetadataResponse(StepResponse):
+    """Step created from metadata only, with optional upload specs."""
+
+    screenshot_upload: Optional[UploadSpec] = None
+    video_upload: Optional[UploadSpec] = None
