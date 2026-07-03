@@ -96,6 +96,23 @@ class S3Service:
             ExpiresIn=expires_in,
         )
 
+    def generate_presigned_get_url(
+        self,
+        key: str,
+        expires_in: int = 3600,
+    ) -> Optional[str]:
+        """Return a presigned GET URL for client playback of private S3 objects."""
+        if self.s3_client is None:
+            return None
+        return self.s3_client.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': self.bucket_name,
+                'Key': key,
+            },
+            ExpiresIn=expires_in,
+        )
+
     def upload_file(self, file: bytes, folder: str, filename: str) -> Optional[str]:
         """
         Upload any file to S3 bucket.

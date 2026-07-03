@@ -19,6 +19,25 @@ from app.services.groq_service import groq_service
 from app.services.video_processor import video_processor
 
 
+def _get_or_create_demo(db: Session, demo_id: UUID) -> Demo:
+    """Retrieve an existing demo or create a placeholder demo for step creation."""
+    demo = db.query(Demo).filter(Demo.id == demo_id).first()
+    if demo:
+        return demo
+
+    print(
+        f"Warning: Demo {demo_id} not found. Creating placeholder demo record for step creation.")
+    placeholder_demo = Demo(
+        id=demo_id,
+        status="processing",
+        language="en",
+    )
+    db.add(placeholder_demo)
+    db.commit()
+    db.refresh(placeholder_demo)
+    return placeholder_demo
+
+
 async def _process_and_save_step_video(
     video: UploadFile,
     demo_id: UUID,
@@ -40,9 +59,28 @@ async def _process_and_save_step_video(
 router = APIRouter(prefix="/demos", tags=["steps"])
 
 
+def _step_response(step: Step) -> StepResponse:
+    """Serialize a step with browser-accessible media URLs."""
+    response = StepResponse.model_validate(step)
+    response.image_url = local_storage.sign_media_url(response.image_url)
+    response.video_url = local_storage.sign_media_url(response.video_url)
+    return response
+
+
+def _step_metadata_response(step: Step, screenshot_upload: UploadSpec, video_upload: UploadSpec) -> StepMetadataResponse:
+    response = StepMetadataResponse.model_validate(step)
+    response.image_url = local_storage.sign_media_url(response.image_url)
+    response.video_url = local_storage.sign_media_url(response.video_url)
+    response.screenshot_upload = screenshot_upload
+    response.video_upload = video_upload
+    return response
+
+
 def _build_upload_specs(demo_id: UUID, step_id: UUID) -> tuple[UploadSpec, UploadSpec]:
-    screenshot_spec = UploadSpec(**local_storage.get_screenshot_upload_spec(demo_id, step_id))
-    video_spec = UploadSpec(**local_storage.get_video_upload_spec(demo_id, step_id))
+    screenshot_spec = UploadSpec(
+        **local_storage.get_screenshot_upload_spec(demo_id, step_id))
+    video_spec = UploadSpec(
+        **local_storage.get_video_upload_spec(demo_id, step_id))
     return screenshot_spec, video_spec
 
 
@@ -57,12 +95,7 @@ async def create_step_metadata(
     Returns upload specs for screenshot and video so the client can upload separately.
     """
     try:
-        demo = db.query(Demo).filter(Demo.id == demo_id).first()
-        if not demo:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Demo with id {demo_id} not found"
-            )
+        demo = _get_or_create_demo(db, demo_id)
 
         description_en = None
         description_ar = None
@@ -97,11 +130,9 @@ async def create_step_metadata(
         db.commit()
         db.refresh(new_step)
 
-        screenshot_upload, video_upload = _build_upload_specs(demo_id, new_step.id)
-        response = StepMetadataResponse.model_validate(new_step)
-        response.screenshot_upload = screenshot_upload
-        response.video_upload = video_upload
-        return response
+        screenshot_upload, video_upload = _build_upload_specs(
+            demo_id, new_step.id)
+        return _step_metadata_response(new_step, screenshot_upload, video_upload)
 
     except HTTPException:
         raise
@@ -130,11 +161,11 @@ async def create_step(
 ):
     """
     Create a new step for a demo.
-    
+
     This endpoint creates a new step within a demonstration. If a screenshot
     is provided, it uploads to S3 and generates AI-powered descriptions in
     English and Arabic using Groq.
-    
+
     Args:
         demo_id: UUID of the parent demo
         step_number: Sequential number of this step
@@ -147,29 +178,23 @@ async def create_step(
         screenshot: Optional screenshot image file
         video: Optional lead-up video clip for this step
         db: Database session
-    
+
     Returns:
         StepResponse: Created step details with AI-generated descriptions
-    
+
     Raises:
         HTTPException: If demo not found or step creation fails
     """
     try:
-        # Verify that the demo exists
-        demo = db.query(Demo).filter(Demo.id == demo_id).first()
-        
-        if not demo:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Demo with id {demo_id} not found"
-            )
-        
+        # Verify that the demo exists or create a placeholder demo record
+        demo = _get_or_create_demo(db, demo_id)
+
         # Initialize variables
         image_url = None
         video_url = None
         description_en = None
         description_ar = None
-        
+
         # Process screenshot if provided
         if screenshot:
             try:
@@ -184,7 +209,8 @@ async def create_step(
                 )
             except Exception as e:
                 # Don't let a screenshot save failure drop the whole step.
-                print(f"Warning: Failed to save screenshot for step {step_number}: {str(e)}")
+                print(
+                    f"Warning: Failed to save screenshot for step {step_number}: {str(e)}")
                 image_url = None
 
         if video:
@@ -193,9 +219,10 @@ async def create_step(
             except Exception as e:
                 # Video processing (e.g. ffmpeg) can fail on certain clips.
                 # Don't let that drop the whole step — persist it without a video.
-                print(f"Warning: Failed to process step video for step {step_number}: {str(e)}")
+                print(
+                    f"Warning: Failed to process step video for step {step_number}: {str(e)}")
                 video_url = None
-        
+
         # Generate AI descriptions using Groq
         if action or element:
             try:
@@ -208,7 +235,7 @@ async def create_step(
                 print(f"Warning: Failed to generate AI descriptions: {str(e)}")
                 description_en = f"Step {step_number}: {action or 'Action'} on {element or 'element'}"
                 description_ar = f"الخطوة {step_number}: {action or 'إجراء'} على {element or 'عنصر'}"
-        
+
         # Create new step instance
         new_step = Step(
             demo_id=demo_id,
@@ -225,18 +252,18 @@ async def create_step(
             ai_description_ar=description_ar,
             hotspot_text=hotspot_text,
         )
-        
+
         # Add to database
         db.add(new_step)
         db.commit()
         db.refresh(new_step)
-        
-        return new_step
-    
+
+        return _step_response(new_step)
+
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
-    
+
     except Exception as e:
         db.rollback()
         raise HTTPException(
@@ -252,41 +279,41 @@ def get_demo_steps(
 ):
     """
     Get all steps for a demo.
-    
+
     This endpoint retrieves all steps associated with a specific demo,
     ordered by step number.
-    
+
     Args:
         demo_id: UUID of the demo
         db: Database session
-    
+
     Returns:
         List[StepResponse]: List of all steps for the demo
-    
+
     Raises:
         HTTPException: If demo not found or retrieval fails
     """
     try:
         # Verify that the demo exists
         demo = db.query(Demo).filter(Demo.id == demo_id).first()
-        
+
         if not demo:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Demo with id {demo_id} not found"
             )
-        
+
         # Get all steps for the demo, ordered by step_number
         steps = db.query(Step).filter(
             Step.demo_id == demo_id
         ).order_by(Step.step_number).all()
-        
-        return steps
-    
+
+        return [_step_response(step) for step in steps]
+
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -303,22 +330,27 @@ async def update_step_screenshot(
 ):
     """Upload or replace the screenshot for an existing step."""
     try:
-        demo = db.query(Demo).filter(Demo.id == demo_id).first()
-        if not demo:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Demo with id {demo_id} not found"
-            )
+        demo = _get_or_create_demo(db, demo_id)
 
         step = db.query(Step).filter(
             Step.id == step_id,
             Step.demo_id == demo_id
         ).first()
         if not step:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Step with id {step_id} not found"
+            # Step doesn't exist yet — create a placeholder so the screenshot
+            # can be attached. The extension may send the screenshot before
+            # the metadata POST completes or retries on a new session.
+            existing_count = db.query(Step).filter(
+                Step.demo_id == demo_id
+            ).count()
+            step = Step(
+                id=step_id,
+                demo_id=demo_id,
+                step_number=existing_count + 1,
             )
+            db.add(step)
+            db.commit()
+            db.refresh(step)
 
         screenshot_content = await screenshot.read()
         step.image_url = local_storage.save_screenshot(
@@ -328,7 +360,7 @@ async def update_step_screenshot(
         )
         db.commit()
         db.refresh(step)
-        return step
+        return _step_response(step)
 
     except HTTPException:
         raise
@@ -404,7 +436,7 @@ def confirm_step_media(
 
         db.commit()
         db.refresh(step)
-        return step
+        return _step_response(step)
 
     except HTTPException:
         raise
@@ -447,7 +479,7 @@ async def update_step_video(
         step.video_url = await _process_and_save_step_video(video, demo_id, step.step_number)
         db.commit()
         db.refresh(step)
-        return step
+        return _step_response(step)
 
     except HTTPException:
         raise
@@ -472,10 +504,10 @@ def update_step(
 ):
     """
     Update a step's description and coordinates.
-    
+
     This endpoint allows updating a step's AI-generated descriptions
     and tooltip coordinates.
-    
+
     Args:
         demo_id: UUID of the parent demo
         step_id: UUID of the step to update
@@ -484,61 +516,61 @@ def update_step(
         coord_x: Updated X-coordinate
         coord_y: Updated Y-coordinate
         db: Database session
-    
+
     Returns:
         StepResponse: Updated step details
-    
+
     Raises:
         HTTPException: If demo or step not found or update fails
     """
     try:
         # Verify that the demo exists
         demo = db.query(Demo).filter(Demo.id == demo_id).first()
-        
+
         if not demo:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Demo with id {demo_id} not found"
             )
-        
+
         # Find the step
         step = db.query(Step).filter(
             Step.id == step_id,
             Step.demo_id == demo_id
         ).first()
-        
+
         if not step:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Step with id {step_id} not found"
             )
-        
+
         # Update fields if provided
         if ai_description_en is not None:
             step.ai_description_en = ai_description_en
-        
+
         if ai_description_ar is not None:
             step.ai_description_ar = ai_description_ar
 
         if hotspot_text is not None:
             step.hotspot_text = hotspot_text
-        
+
         if coord_x is not None:
             step.coord_x = coord_x
-        
+
         if coord_y is not None:
             step.coord_y = coord_y
-        
+
         # Commit changes
         db.commit()
         db.refresh(step)
-        
-        return step
-    
+
+        return _step_response(step)
+
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
-    
+
     except Exception as e:
         db.rollback()
         raise HTTPException(
@@ -555,36 +587,36 @@ def delete_step(
 ):
     """
     Delete a step.
-    
+
     This endpoint deletes a specific step from a demo.
-    
+
     Args:
         demo_id: UUID of the parent demo
         step_id: UUID of the step to delete
         db: Database session
-    
+
     Returns:
         dict: Success message
-    
+
     Raises:
         HTTPException: If demo or step not found or deletion fails
     """
     try:
         # Verify that the demo exists
         demo = db.query(Demo).filter(Demo.id == demo_id).first()
-        
+
         if not demo:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Demo with id {demo_id} not found"
             )
-        
+
         # Find the step
         step = db.query(Step).filter(
             Step.id == step_id,
             Step.demo_id == demo_id
         ).first()
-        
+
         if not step:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -597,13 +629,13 @@ def delete_step(
         # Delete the step
         db.delete(step)
         db.commit()
-        
+
         return {"message": "Step deleted successfully"}
-    
+
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
-    
+
     except Exception as e:
         db.rollback()
         raise HTTPException(

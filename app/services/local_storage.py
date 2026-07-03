@@ -324,6 +324,25 @@ class LocalStorage:
             return f"/static/videos/{demo_id}/step_{step_number}.mp4"
         return None
 
+    def sign_media_url(self, url: Optional[str], expires_in: int = 3600) -> Optional[str]:
+        """
+        Convert a stored S3 public URL into a presigned GET URL for browser playback.
+
+        Private buckets reject anonymous GET requests (403). Local /static paths are
+        returned unchanged.
+        """
+        if not url:
+            return None
+        if not _s3_enabled():
+            return url
+
+        key = s3_service._extract_s3_key_from_url(url)
+        if not key:
+            return url
+
+        signed = s3_service.generate_presigned_get_url(key, expires_in=expires_in)
+        return signed or url
+
     def delete_demo_files(self, demo_id: UUID) -> bool:
         """
         Delete all files associated with a demo (video and screenshots).
