@@ -217,7 +217,7 @@ async def create_step(
             try:
                 video_url = await _process_and_save_step_video(video, demo_id, step_number)
             except Exception as e:
-                # Video processing (e.g. ffmpeg) can fail on certain clips.
+                # Video processing can fail on certain clips.
                 # Don't let that drop the whole step — persist it without a video.
                 print(
                     f"Warning: Failed to process step video for step {step_number}: {str(e)}")
